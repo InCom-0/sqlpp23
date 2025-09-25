@@ -26,7 +26,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include <cstdio>
+#include <print>
 
 #ifdef BUILD_WITH_MODULES
 import sqlpp23.core;
@@ -35,45 +36,79 @@ import sqlpp23.core;
 #endif
 
 
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const std::optional<T>& t) {
-  if (not t)
-    return os << "NULL";
-  return os << t.value();
-}
+template<typename T>
+struct std::formatter<std::optional<T>, char>
+{
+  template <class ParseContext>
+  constexpr ParseContext::iterator parse(ParseContext& ctx) {
+    auto it = ctx.begin();
+    if (it == ctx.end())
+      return it;
 
-inline std::ostream& operator<<(std::ostream& stream,
-                                const sqlpp::isolation_level& level) {
-  switch (level) {
-    case sqlpp::isolation_level::serializable: {
-      stream << "SERIALIZABLE";
-      break;
-    }
-    case sqlpp::isolation_level::repeatable_read: {
-      stream << "REPEATABLE READ";
-      break;
-    }
-    case sqlpp::isolation_level::read_committed: {
-      stream << "READ COMMITTED";
-      break;
-    }
-    case sqlpp::isolation_level::read_uncommitted: {
-      stream << "READ UNCOMMITTED";
-      break;
-    }
-    case sqlpp::isolation_level::undefined: {
-      stream << "BEGIN";
-      break;
-    }
+    if (it != ctx.end() && *it != '}')
+      throw std::format_error("parser not implemented for std::optional<T>");
+
+    return it;
   }
 
-  return stream;
+  template <class FmtContext>
+  FmtContext::iterator format(std::optional<T> t, FmtContext& ctx) const {
+    if (not t) {
+      return std::ranges::copy("NULL", ctx.out()).out;
+    }
+
+    return std::ranges::copy(std::format("{}", t.value()), ctx.out()).out;
+  }
+};
+
+inline std::string_view isolation_level_to_string(
+    const sqlpp::isolation_level& level) {
+  switch (level) {
+    case sqlpp::isolation_level::serializable: {
+      return "SERIALIZABLE";
+    }
+    case sqlpp::isolation_level::repeatable_read: {
+      return "REPEATABLE READ";
+    }
+    case sqlpp::isolation_level::read_committed: {
+      return "READ COMMITTED";
+    }
+    case sqlpp::isolation_level::read_uncommitted: {
+      return "READ UNCOMMITTED";
+    }
+    case sqlpp::isolation_level::undefined: {
+      return "BEGIN";
+    }
+  }
 }
+
+template<>
+struct std::formatter<sqlpp::isolation_level, char>
+{
+  template <class ParseContext>
+  constexpr ParseContext::iterator parse(ParseContext& ctx) {
+    auto it = ctx.begin();
+    if (it == ctx.end())
+      return it;
+
+    if (it != ctx.end() && *it != '}')
+      throw std::format_error(
+          "parser not implemented for sqlpp::isolation_level");
+
+    return it;
+  }
+
+  template <class FmtContext>
+  FmtContext::iterator format(sqlpp::isolation_level t, FmtContext& ctx) const {
+    return std::ranges::copy(isolation_level_to_string(t), ctx.out()).out;
+  }
+};
+
 
 template <typename L, typename R>
 auto require_equal(int line, const L& l, const R& r) -> void {
   if (l != r) {
-    std::cerr << line << ": " << l << " != " << r << std::endl;
+    std::println("{}: {} != {}", line, l, r);
     throw std::runtime_error("Unexpected result");
   }
 }

@@ -24,8 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
 #include <chrono>
 
+#include <sqlpp23/core/detail/parse_date_time.h>
 #include <sqlpp23/tests/core/all.h>
 
 namespace {

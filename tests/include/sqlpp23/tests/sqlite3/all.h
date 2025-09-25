@@ -29,6 +29,7 @@
 // before the import declaration. For details see
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=114795#c3
 
+#include <iostream>
 #include <cassert>
 #include <chrono>
 #include <cmath>
@@ -41,6 +42,13 @@
 #include <sqlpp23/tests/core/result_helpers.h>
 #include <sqlpp23/tests/sqlite3/make_test_connection.h>
 #include <sqlpp23/tests/sqlite3/serialize_helpers.h>
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::optional<T>& t) {
+  if (not t)
+    return os << "NULL";
+  return os << t.value();
+}
 
 #ifdef BUILD_WITH_MODULES
 import sqlpp23.core;

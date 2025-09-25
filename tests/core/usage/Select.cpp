@@ -24,20 +24,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define SQLPP_USE_MOCK_DB
 #include <sqlpp23/tests/core/all.h>
+
+template <typename... Fields>
+auto print_to_stderr(const Fields&... fields) -> void {
+  (std::print(stderr, "{} ", fields), ...);
+  std::println(stderr, "");
+}
 
 struct to_cerr {
   template <typename... Fields>
   auto operator()(const Fields&... fields) const -> void {
-    (std::cerr << ... << fields);
+    print_to_stderr(fields...);
   }
 };
 
 template <typename Row>
 void print_row(Row const& row) {
-  const std::optional<int64_t> a = row.id;
-  const std::optional<std::string_view> b = row.textN;
-  std::cout << a << ", " << b << std::endl;
+  print_to_stderr(row.id, row.textN);
 }
 
 SQLPP_CREATE_NAME_TAG(param2);
@@ -58,11 +63,10 @@ int Select(int, char*[]) {
   select(sqlpp::count(1).as(N));
   select(count(sqlpp::value(1)).as(N));
 
-  std::cerr << to_sql_string(printer,
-                             select(sqlpp::value(false).as(sqlpp::alias::a)))
-            << std::endl;
+  std::print(stderr, "{}", to_sql_string(printer,
+                             select(sqlpp::value(false).as(sqlpp::alias::a))));
   for (const auto& row : db(select(sqlpp::value(false).as(sqlpp::alias::a)))) {
-    std::cout << row.a << std::endl;
+    std::println("{}", row.a);
   }
 
   {
@@ -74,9 +78,7 @@ int Select(int, char*[]) {
   }
 
   for (const auto& row : db(select(all_of(t)).from(t))) {
-    const std::optional<int64_t> a = row.id;
-    const std::optional<std::string_view> b = row.textN;
-    std::cout << a << ", " << b << std::endl;
+    print_row(row);
   }
 
   for (const auto& row : db(select(all_of(t), t.boolNn.as(t))
@@ -85,15 +87,15 @@ int Select(int, char*[]) {
                                 .for_update())) {
     const std::optional<int64_t> a = row.id;
     const std::optional<std::string_view> b = row.textN;
-    const bool g = row.tabBar;
-    std::cout << a << ", " << b << ", " << g << std::endl;
+    const bool c = row.tabBar;
+    std::apply(to_cerr{}, std::tie(a, b, c));
   }
 
 
   for (const auto& row :
        db(select(all_of(t), f.textNnD)
               .from(t.join(f).on(t.id > f.doubleN and not t.boolNn)))) {
-    std::cout << row.id << std::endl;
+    print_to_stderr(row.id);
   }
 
   for (const auto& row : db(select(all_of(t), f.textNnD)
@@ -101,18 +103,18 @@ int Select(int, char*[]) {
                                           .on(t.id > f.doubleN)
                                           .join(tab_a)
                                           .on(t.id == tab_a.doubleN)))) {
-    std::cout << row.id << std::endl;
+    print_to_stderr(row.id);
   }
 
   for (const auto& row :
        db(select(sqlpp::count(1).as(N), avg(t.id).as(average)).from(t))) {
-    std::cout << row.N << std::endl;
+    print_to_stderr(row.N);
   }
 
   for (const auto& row : db(select(count(t.id).as(N), avg(t.id).as(average))
                                 .from(t)
                                 .where(t.id == 0))) {
-    std::cout << row.N << std::endl;
+    print_to_stderr(row.N);
   }
 
   auto stat = sqlpp::select()
@@ -124,7 +126,7 @@ int Select(int, char*[]) {
                   .having(max(t.boolNn) > 0)
                   .offset(19u)
                   .limit(7u);
-  std::cerr << to_sql_string(printer, stat) << std::endl;
+  print_to_stderr(to_sql_string(printer, stat));
 
   auto s = sqlpp::select()
                .columns(sqlpp::distinct, t.id)
@@ -136,8 +138,7 @@ int Select(int, char*[]) {
                .limit(32u)
                .offset(7u);
   for (const auto& row : db(db.prepare(s))) {
-    const std::optional<int64_t> a = row.id;
-    std::cout << a << std::endl;
+    print_to_stderr(row.id);
   }
 
   auto s2 = sqlpp::select()
@@ -150,11 +151,10 @@ int Select(int, char*[]) {
                 .limit(sqlpp::dynamic(maybe, 32u))
                 .offset(sqlpp::dynamic(maybe, 7u));
   for (const auto& row : db(db.prepare(s2))) {
-    const std::optional<int64_t> a = row.id;
-    std::cout << a << std::endl;
+    print_to_stderr(row.id);
   }
 
-  std::cerr << to_sql_string(printer, s) << std::endl;
+  print_to_stderr(to_sql_string(printer, s));
 
   select(sqlpp::value(7).as(t.id));
 
@@ -163,7 +163,7 @@ int Select(int, char*[]) {
                                        .else_(std::nullopt)
                                        .as(t.textN))
                                 .from(t))) {
-    std::cerr << row.textN << std::endl;
+    print_to_stderr(row.textN);
   }
 
   for (const auto& row : db(select(all_of(t)).from(t))) {
@@ -173,29 +173,21 @@ int Select(int, char*[]) {
   {
     auto transaction =
         start_transaction(db, sqlpp::isolation_level::read_committed);
-    if (db._mock_data._last_isolation_level !=
-        sqlpp::isolation_level::read_committed) {
-      std::cout
-          << "Error: transaction isolation level does not match expected level"
-          << std::endl;
-    }
+    require_equal(__LINE__, db._mock_data._last_isolation_level,
+                  sqlpp::isolation_level::read_committed);
   }
   db.set_default_isolation_level(sqlpp::isolation_level::read_uncommitted);
   {
     auto transaction = start_transaction(db);
-    if (db._mock_data._last_isolation_level !=
-        sqlpp::isolation_level::read_uncommitted) {
-      std::cout
-          << "Error: transaction isolation level does not match default level"
-          << std::endl;
-    }
+    require_equal(__LINE__, db._mock_data._last_isolation_level,
+                  sqlpp::isolation_level::read_uncommitted);
   }
 
   // Move to type tests?
   for (const auto& row :
        db(select(f.doubleN, value(select(count(t.id).as(N)).from(t)).as(cheese))
               .from(f))) {
-    std::cout << row.doubleN << " " << row.cheese << std::endl;
+    print_to_stderr(row.doubleN, row.cheese);
   }
 
   // checking #584

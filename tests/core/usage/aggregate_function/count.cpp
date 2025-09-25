@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define SQLPP_USE_MOCK_DB
 #include <sqlpp23/tests/core/all.h>
 
 SQLPP_CREATE_NAME_TAG(count_1);
@@ -62,7 +63,7 @@ int main(int, char*[]) {
       std::ignore = row.count_1;
     }
   } catch (const std::exception& e) {
-    std::cerr << "Exception: " << e.what() << std::endl;
+    std::println(stderr, "Exception: {}", e.what());
     return 1;
   }
   return 0;

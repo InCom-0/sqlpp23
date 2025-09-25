@@ -27,7 +27,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <iostream>
+#include <cstdio>
+#include <print>
 #include <random>
 #include <thread>
 #include <unordered_set>
@@ -62,7 +63,7 @@ native_set<Pool> get_native_handles(Pool& pool) {
 
 template <typename Pool>
 void test_conn_move(Pool& pool) {
-  std::clog << __func__ << '\n';
+  std::println(stderr, "{}", __func__);
   auto nh_all = get_native_handles(pool);
   {
     // Get one connection from the pool
@@ -115,7 +116,7 @@ void test_conn_move(Pool& pool) {
 
 template <typename Pool>
 void test_conn_check(Pool& pool) {
-  std::clog << __func__ << '\n';
+  std::println(stderr, "{}", __func__);
   auto check_db = [](typename Pool::_pooled_connection_t db) {
     if (db.is_connected() == false) {
       throw std::runtime_error{"is_connected() returned false"};
@@ -131,21 +132,21 @@ void test_conn_check(Pool& pool) {
 
 template <typename Pool>
 void test_basic(Pool& pool) {
-  std::clog << __func__ << '\n';
+  std::println(stderr, "{}", __func__);
   try {
     auto db = pool.get();
     ::test::createTabDepartment(db);
     ::test::TabDepartment tabDept = {};
     db(insert_into(tabDept).default_values());
   } catch (const std::exception& e) {
-    std::cerr << "Exception in " << __func__ << "\n";
+    std::println(stderr, "Exception in {}", __func__);
     throw;
   }
 }
 
 template <typename Pool>
 void test_single_connection(Pool& pool) {
-  std::clog << __func__ << '\n';
+  std::println(stderr, "{}", __func__);
   try {
     auto* handle = [&pool]() {
       auto db = pool.get();
@@ -155,20 +156,20 @@ void test_single_connection(Pool& pool) {
     for (auto i = 0; i < 100; ++i) {
       auto db = pool.get();
       if (handle != db.native_handle()) {
-        std::cerr << "original connection: " << handle << std::endl;
-        std::cerr << "received connection: " << db.native_handle() << std::endl;
+        std::println(stderr, "original connection: {}", static_cast<void*>(handle));
+        std::println(stderr, "received connection: {}", static_cast<void*>(db.native_handle()));
         throw std::logic_error{"Pool acquired more than one connection"};
       }
     }
   } catch (const std::exception& e) {
-    std::cerr << "Exception in " << __func__ << "\n";
+    std::println(stderr, "Exception in {}", __func__);
     throw;
   }
 }
 
 template <typename Pool>
 void test_multiple_connections(Pool& pool) {
-  std::clog << __func__ << '\n';
+  std::println(stderr, "{}", __func__);
   try {
     ::test::TabDepartment tabDept = {};
     auto connections =
@@ -186,20 +187,20 @@ void test_multiple_connections(Pool& pool) {
       db(insert_into(tabDept).default_values());
     }
   } catch (const std::exception& e) {
-    std::cerr << "Exception in " << __func__ << "\n";
+    std::println(stderr, "Exception in {}", __func__);
     throw;
   }
 }
 
 template <typename Pool>
 void test_multithreaded(Pool& pool) {
-  std::clog << __func__ << '\n';
+  std::println(stderr, "{}", __func__);
   std::random_device r;
   std::default_random_engine random_engine(r());
   std::uniform_int_distribution<int> uniform_dist(1, 20);
 
-  std::clog << "Run a random number [1,20] of threads\n";
-  std::clog << "Each with a random number [1,20] of {pool.get() & insert}\n";
+  std::println(stderr, "Run a random number [1,20] of threads");
+  std::println(stderr, "Each with a random number [1,20] of {{pool.get() & insert}}");
 
   try {
     auto threads = std::vector<std::thread>{};
@@ -216,8 +217,8 @@ void test_multithreaded(Pool& pool) {
             connection(insert_into(tabDept).default_values());
           }
         } catch (const std::exception& e) {
-          std::cerr << std::string(func) +
-                           ": In-thread exception: " + e.what() + "\n";
+          std::println(stderr, "{}: In-thread exception: {}", func,
+                       e.what());
           std::abort();
         }
       }));
@@ -226,14 +227,14 @@ void test_multithreaded(Pool& pool) {
       t.join();
     }
   } catch (const std::exception& e) {
-    std::cerr << "Exception in " << __func__ << "\n";
+    std::println(stderr, "Exception in {}", __func__);
     throw;
   }
 }
 
 template <typename Pool>
 void test_destruction_order(typename Pool::_config_ptr_t config) {
-  std::clog << __func__ << '\n';
+  std::println(stderr, "{}", __func__);
   // Create a pool, get a connection from it and then destroy the pool before
   // the connection
   auto pool = std::make_unique<Pool>(config, 5);

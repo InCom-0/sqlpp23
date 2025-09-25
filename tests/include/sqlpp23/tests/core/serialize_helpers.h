@@ -26,27 +26,28 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include <cstdio>
+#include <print>
 
 #ifdef BUILD_WITH_MODULES
 import sqlpp23.core;
 import sqlpp23.mock_db;
 #else
 #include <sqlpp23/sqlpp23.h>
-#include <sqlpp23/mock_db/mock_db.h>
+#include <sqlpp23/mock_db/database/serializer_context.h>
 #endif
 
-#define SQLPP_COMPARE(expr, expected_string)                       \
-  {                                                                \
-    sqlpp::mock_db::context_t printer;                             \
-                                                                   \
-    using sqlpp::to_sql_string;                                    \
-    const auto result = to_sql_string(printer, expr);              \
-                                                                   \
-    if (result != expected_string) {                               \
-      std::cerr << __FILE__ << " " << __LINE__ << '\n'             \
-                << "Expected: -->|" << expected_string << "|<--\n" \
-                << "Received: -->|" << result << "|<--\n";         \
-      return -1;                                                   \
-    }                                                              \
+#define SQLPP_COMPARE(expr, expected_string)                            \
+  {                                                                     \
+    sqlpp::mock_db::context_t printer;                                  \
+                                                                        \
+    using sqlpp::to_sql_string;                                         \
+    const auto result = to_sql_string(printer, expr);                   \
+                                                                        \
+    if (result != expected_string) {                                    \
+      std::print(stderr,                                                \
+                 "{}:{}\nExpected: -->|{}|<--\nReceived: -->|{}|<--\n", \
+                 __FILE__, __LINE__, expected_string, result);          \
+      return -1;                                                        \
+    }                                                                   \
   }

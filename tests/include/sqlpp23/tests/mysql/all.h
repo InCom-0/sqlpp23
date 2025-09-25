@@ -29,12 +29,21 @@
 // before the import declaration. For details see
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=114795#c3
 
+#include <iostream>
+
 #include <cassert>
 #include <chrono>
 #include <cmath>
 #include <memory>
 #include <print>
 #include <unordered_set>
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::optional<T>& t) {
+  if (not t)
+    return os << "NULL";
+  return os << t.value();
+}
 
 #include <sqlpp23/core/name/create_name_tag.h>
 #include <sqlpp23/tests/core/assert_throw.h>

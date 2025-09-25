@@ -24,6 +24,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cstdio>
+#include <print>
+#include <sqlpp23/core/detail/circular_buffer.h>
 #include <sqlpp23/tests/core/all.h>
 
 namespace sqlpp {
@@ -31,9 +34,8 @@ namespace {
 template <typename Result, typename Expected>
 void assert_equal(int lineNo, const Result& result, const Expected& expected) {
   if (result != expected) {
-    std::cerr << __FILE__ << " " << lineNo << '\n'
-              << "Expected: -->|" << expected << "|<--\n"
-              << "Received: -->|" << result << "|<--\n";
+    std::println(stderr, "{} {}\nExpected: -->|{}|<--\nReceived: -->|{}|<--",
+                 __FILE__, lineNo, expected, result);
     throw std::runtime_error("unexpected result");
   }
 }
@@ -43,9 +45,8 @@ void assert_not_equal(int lineNo,
                       const Result& result,
                       const Expected& expected) {
   if (result == expected) {
-    std::cerr << __FILE__ << " " << lineNo << '\n'
-              << "Expected: -->|" << expected << "|<--\n"
-              << "Received: -->|" << result << "|<--\n";
+    std::println(stderr, "{} {}\nExpected: -->|{}|<--\nReceived: -->|{}|<--",
+                 __FILE__, lineNo, expected, result);
     throw std::runtime_error("unexpected equality");
   }
 }
@@ -67,12 +68,12 @@ void assert_runtime_error(int lineNo, Callable callable) {
   } catch (const std::runtime_error& ex) {
     return;
   } catch (...) {
-    std::cerr << __FILE__ << " " << lineNo << '\n'
-              << "Unexpected exception caught\n";
+    std::println(stderr, "{} {}: Unexpected exception caught", __FILE__,
+                 lineNo);
     throw std::runtime_error("unexpected exception");
   }
-  std::cerr << __FILE__ << " " << lineNo << '\n'
-            << "Expected exception not thrown\n";
+  std::println(stderr, "{} {}: Expected exception not thrown", __FILE__,
+               lineNo);
   throw std::runtime_error("Missing exception");
 }
 
@@ -81,8 +82,8 @@ void assert_no_except(int lineNo, Callable callable) {
   try {
     callable();
   } catch (...) {
-    std::cerr << __FILE__ << " " << lineNo << '\n'
-              << "Unexpected exception caught\n";
+    std::println(stderr, "{} {}: Unexpected exception caught", __FILE__,
+                 lineNo);
     throw std::runtime_error("unexpected exception");
   }
 }

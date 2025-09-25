@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define SQLPP_USE_MOCK_DB
 #include <sqlpp23/tests/core/all.h>
 
 int With(int, char*[]) {
@@ -39,8 +40,8 @@ int With(int, char*[]) {
   auto y0 = sqlpp::cte(sqlpp::alias::y).as(select(all_of(t)).from(t));
   auto y = y0.union_all(select(all_of(y0)).from(y0));
 
-  std::cout << to_sql_string(printer, y) << std::endl;
-  std::cout << to_sql_string(printer, from(y)) << std::endl;
+  std::println(stdout, "{}", to_sql_string(printer, y));
+  std::println(stdout, "{}", to_sql_string(printer, from(y)));
 
   db(with(y) << select(y.id).from(y));
 
@@ -61,10 +62,10 @@ int With(int, char*[]) {
         with(recursiveCte) << select(recursiveCte.id).from(recursiveCte);
 
     const auto serializedQuery = to_sql_string(printer, query);
-    std::cout << serializedQuery << '\n';
+    std::println(stdout, "{}", serializedQuery);
 
     for (const auto& row : db(query)) {
-      std::cout << row.id;
+    std::println(stdout, "{}", row.id);
     }
   }
 

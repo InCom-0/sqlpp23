@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+#define SQLPP_USE_MOCK_DB
 #include <sqlpp23/tests/core/all.h>
 
 namespace {

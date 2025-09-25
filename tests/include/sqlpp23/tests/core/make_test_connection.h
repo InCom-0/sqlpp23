@@ -26,7 +26,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include <cstdio>
+#include <print>
 #include <memory>
 #include <vector>
 
@@ -46,7 +47,7 @@ inline std::shared_ptr<sqlpp::mock_db::connection_config> make_test_config(
 
   config->id = "mock";
   config->debug = debug_logger(categories, [](const std::string& message) {
-    std::clog << message << '\n';
+      std::print(stderr, "{}\n", message);
   });
   return config;
 }

@@ -26,6 +26,7 @@
 
 #include <chrono>
 
+#define SQLPP_USE_MOCK_DB
 #include <sqlpp23/tests/core/all.h>
 
 namespace {
@@ -45,17 +46,16 @@ int DateTime(int, char*[]) {
 
   for (const auto& row :
        db(select(::sqlpp::value(std::chrono::system_clock::now()).as(now)))) {
-    std::cout << row.now;
+    std::print("{}\n", row.now);
   }
   for (const auto& row : db(select(all_of(t)).from(t))) {
-    std::cout << row.dateN;
-    std::cout << row.timestampN;
+    std::print("{}\n",  row.dateN);
+    std::print("{}\n",  row.timestampN);
     const auto tp = row.timestampN.value();
-    std::cout << std::chrono::system_clock::to_time_t(tp);
+    std::print("{}\n",  std::chrono::system_clock::to_time_t(tp));
   }
-  std::cerr << to_sql_string(printer,
-                             ::sqlpp::value(std::chrono::system_clock::now()))
-            << std::endl;
+  std::print("{}\n", to_sql_string(printer,
+                             ::sqlpp::value(std::chrono::system_clock::now())));
 
   db(insert_into(t).set(t.dateN = std::chrono::floor<std::chrono::days>(
                             std::chrono::system_clock::now())));
